@@ -46,10 +46,6 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
-
-  // P1 code
-  // p->queuetype = 0;
-  // p->quantumsize = 4;
   
   // setting the init queue type to 1 and init quantumsize to 2 (20ms)
   p->queuetype = 1;
@@ -277,7 +273,7 @@ scheduler(void)
 {
   struct proc *p;
 
-  // initialize queue counts, used for housekeeping
+  // initialize queue counts, used for queue maintenance
   int q1count = 0;
   int q2count = 0;
   int q3count = 0;
@@ -309,6 +305,7 @@ scheduler(void)
             p->queuetype = 1;
             p->quantumsize = 2;
           }
+          // since process isn't runnable, 
           // exit the loop and go to next process in ptable
         continue;
         }
@@ -348,13 +345,13 @@ scheduler(void)
           proc->quantumsize--; // decrement quantumsize on each interrupt
           // if the process finishes while in the queue,
           // remove it, reset it's queue parameters, and exit the loop
-          if(p->state != RUNNABLE) { 
+          if(p->state == ZOMBIE) { 
             q1count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
             // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            //   cprintf("Process %d, '%s' reached ZOMBIE state, removed from queue\n", proc->pid, proc->name);
             // }
             break;
           }
@@ -372,13 +369,13 @@ scheduler(void)
               proc->pid, proc->name, proc->queuetype);
           };
           proc->quantumsize--;
-          if(p->state != RUNNABLE) {
+          if(p->state == ZOMBIE) {
             q2count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
             // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            //   cprintf("Process %d, '%s' reached ZOMBIE state, removed from queue\n", proc->pid, proc->name);
             // }
             break;
           }
@@ -396,18 +393,18 @@ scheduler(void)
               proc->pid, proc->name, proc->queuetype);
           };
           proc->quantumsize--;
-          if(p->state != RUNNABLE) {
+          if(p->state == ZOMBIE) {
             q3count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
             // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            //   cprintf("Process %d, '%s' reached ZOMBIE state, removed from queue\n", proc->pid, proc->name);
             // }
             break;
           }
           // if the quantumsize == 8, the process has gone through it's
-          // first of two rounds in q3 - so do round robin, 
+          // first of two rounds in q3 -> do round robin, 
           // exit q3 loop and move to the next process in scheduler
           if(proc->quantumsize == 8) break;
         }
@@ -415,21 +412,21 @@ scheduler(void)
       // handler for if process quantumsize == 0
       if(p->quantumsize == 0) {
         if(p->queuetype == 1) {
-          // demoted to q2
+          // demote to q2
           q1count--;
           q2count++;
           p->queuetype = 2;
           p->quantumsize = 4;
         }
         else if(p->queuetype == 2){
-          // demoted to q3
+          // demote to q3
           q2count--;
           q3count++;
           p->queuetype = 3;
           p->quantumsize = 16;
         }
         else if(p->queuetype == 3){
-          // boosted to q1
+          // boost to q1
           q3count--;
           q1count++;
           p->queuetype = 1;

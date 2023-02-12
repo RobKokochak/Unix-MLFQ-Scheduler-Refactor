@@ -8858,9 +8858,6 @@ found:
   p->state = EMBRYO;
 801044c7:	8b 45 f4             	mov    -0xc(%ebp),%eax
 801044ca:	c7 40 0c 01 00 00 00 	movl   $0x1,0xc(%eax)
-  // P1 code
-  // p->queuetype = 0;
-  // p->quantumsize = 4;
   
   // setting the init queue type to 1 and init quantumsize to 2 (20ms)
   p->queuetype = 1;
@@ -9607,7 +9604,7 @@ scheduler(void)
 80104b47:	83 ec 18             	sub    $0x18,%esp
   struct proc *p;
 
-  // initialize queue counts, used for housekeeping
+  // initialize queue counts, used for queue maintenance
   int q1count = 0;
 80104b4a:	c7 45 f0 00 00 00 00 	movl   $0x0,-0x10(%ebp)
   int q2count = 0;
@@ -9682,6 +9679,7 @@ scheduler(void)
 80104bea:	c7 80 84 00 00 00 02 	movl   $0x2,0x84(%eax)
 80104bf1:	00 00 00 
           }
+          // since process isn't runnable, 
           // exit the loop and go to next process in ptable
         continue;
 80104bf4:	e9 a0 04 00 00       	jmp    80105099 <scheduler+0x555>
@@ -9821,11 +9819,11 @@ scheduler(void)
 80104d24:	89 90 84 00 00 00    	mov    %edx,0x84(%eax)
           // if the process finishes while in the queue,
           // remove it, reset it's queue parameters, and exit the loop
-          if(p->state != RUNNABLE) { 
+          if(p->state == ZOMBIE) { 
 80104d2a:	8b 45 f4             	mov    -0xc(%ebp),%eax
 80104d2d:	8b 40 0c             	mov    0xc(%eax),%eax
-80104d30:	83 f8 03             	cmp    $0x3,%eax
-80104d33:	74 2e                	je     80104d63 <scheduler+0x21f>
+80104d30:	83 f8 05             	cmp    $0x5,%eax
+80104d33:	75 2e                	jne    80104d63 <scheduler+0x21f>
             q1count--;
 80104d35:	83 6d f0 01          	subl   $0x1,-0x10(%ebp)
             p->inqueue = 0;
@@ -9840,7 +9838,7 @@ scheduler(void)
 80104d53:	c7 80 84 00 00 00 02 	movl   $0x2,0x84(%eax)
 80104d5a:	00 00 00 
             // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            //   cprintf("Process %d, '%s' reached ZOMBIE state, removed from queue\n", proc->pid, proc->name);
             // }
             break;
 80104d5d:	90                   	nop
@@ -9954,11 +9952,11 @@ scheduler(void)
 80104e52:	8b 90 84 00 00 00    	mov    0x84(%eax),%edx
 80104e58:	83 ea 01             	sub    $0x1,%edx
 80104e5b:	89 90 84 00 00 00    	mov    %edx,0x84(%eax)
-          if(p->state != RUNNABLE) {
+          if(p->state == ZOMBIE) {
 80104e61:	8b 45 f4             	mov    -0xc(%ebp),%eax
 80104e64:	8b 40 0c             	mov    0xc(%eax),%eax
-80104e67:	83 f8 03             	cmp    $0x3,%eax
-80104e6a:	74 2e                	je     80104e9a <scheduler+0x356>
+80104e67:	83 f8 05             	cmp    $0x5,%eax
+80104e6a:	75 2e                	jne    80104e9a <scheduler+0x356>
             q2count--;
 80104e6c:	83 6d ec 01          	subl   $0x1,-0x14(%ebp)
             p->inqueue = 0;
@@ -9973,7 +9971,7 @@ scheduler(void)
 80104e8a:	c7 80 84 00 00 00 02 	movl   $0x2,0x84(%eax)
 80104e91:	00 00 00 
             // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            //   cprintf("Process %d, '%s' reached ZOMBIE state, removed from queue\n", proc->pid, proc->name);
             // }
             break;
 80104e94:	90                   	nop
@@ -10089,11 +10087,11 @@ scheduler(void)
 80104f90:	8b 90 84 00 00 00    	mov    0x84(%eax),%edx
 80104f96:	83 ea 01             	sub    $0x1,%edx
 80104f99:	89 90 84 00 00 00    	mov    %edx,0x84(%eax)
-          if(p->state != RUNNABLE) {
+          if(p->state == ZOMBIE) {
 80104f9f:	8b 45 f4             	mov    -0xc(%ebp),%eax
 80104fa2:	8b 40 0c             	mov    0xc(%eax),%eax
-80104fa5:	83 f8 03             	cmp    $0x3,%eax
-80104fa8:	74 2a                	je     80104fd4 <scheduler+0x490>
+80104fa5:	83 f8 05             	cmp    $0x5,%eax
+80104fa8:	75 2a                	jne    80104fd4 <scheduler+0x490>
             q3count--;
 80104faa:	83 6d e8 01          	subl   $0x1,-0x18(%ebp)
             p->inqueue = 0;
@@ -10108,13 +10106,13 @@ scheduler(void)
 80104fc8:	c7 80 84 00 00 00 02 	movl   $0x2,0x84(%eax)
 80104fcf:	00 00 00 
             // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            //   cprintf("Process %d, '%s' reached ZOMBIE state, removed from queue\n", proc->pid, proc->name);
             // }
             break;
 80104fd2:	eb 25                	jmp    80104ff9 <scheduler+0x4b5>
           }
           // if the quantumsize == 8, the process has gone through it's
-          // first of two rounds in q3 - so do round robin, 
+          // first of two rounds in q3 -> do round robin, 
           // exit q3 loop and move to the next process in scheduler
           if(proc->quantumsize == 8) break;
 80104fd4:	65 a1 04 00 00 00    	mov    %gs:0x4,%eax
@@ -10135,7 +10133,7 @@ scheduler(void)
             break;
           }
           // if the quantumsize == 8, the process has gone through it's
-          // first of two rounds in q3 - so do round robin, 
+          // first of two rounds in q3 -> do round robin, 
           // exit q3 loop and move to the next process in scheduler
           if(proc->quantumsize == 8) break;
 80104ff8:	90                   	nop
@@ -10152,7 +10150,7 @@ scheduler(void)
 8010500d:	8b 40 7c             	mov    0x7c(%eax),%eax
 80105010:	83 f8 01             	cmp    $0x1,%eax
 80105013:	75 21                	jne    80105036 <scheduler+0x4f2>
-          // demoted to q2
+          // demote to q2
           q1count--;
 80105015:	83 6d f0 01          	subl   $0x1,-0x10(%ebp)
           q2count++;
@@ -10171,7 +10169,7 @@ scheduler(void)
 80105039:	8b 40 7c             	mov    0x7c(%eax),%eax
 8010503c:	83 f8 02             	cmp    $0x2,%eax
 8010503f:	75 21                	jne    80105062 <scheduler+0x51e>
-          // demoted to q3
+          // demote to q3
           q2count--;
 80105041:	83 6d ec 01          	subl   $0x1,-0x14(%ebp)
           q3count++;
@@ -10190,7 +10188,7 @@ scheduler(void)
 80105065:	8b 40 7c             	mov    0x7c(%eax),%eax
 80105068:	83 f8 03             	cmp    $0x3,%eax
 8010506b:	75 1f                	jne    8010508c <scheduler+0x548>
-          // boosted to q1
+          // boost to q1
           q3count--;
 8010506d:	83 6d e8 01          	subl   $0x1,-0x18(%ebp)
           q1count++;
@@ -10210,10 +10208,10 @@ scheduler(void)
 8010508c:	65 c7 05 04 00 00 00 	movl   $0x0,%gs:0x4
 80105093:	00 00 00 00 
 80105097:	eb 01                	jmp    8010509a <scheduler+0x556>
-            p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
           }
+          // since process isn't runnable, 
           // exit the loop and go to next process in ptable
         continue;
 80105099:	90                   	nop

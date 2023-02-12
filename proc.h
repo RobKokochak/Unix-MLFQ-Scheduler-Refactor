@@ -66,9 +66,10 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  
   // insertion start
   int queuetype; // q1, q2, or q3
-  int inqueue; // inidicator flag for if a process is currently waiting in a queue
+  int inqueue; // inidicator flag for if a process is currently in a queue
   int quantumsize;
   // insertion end
 };
