@@ -309,11 +309,11 @@ scheduler(void)
             p->queuetype = 1;
             p->quantumsize = 2;
           }
-          // move along to next process
+          // exit the loop and go to next process in ptable
         continue;
         }
 
-      // if it's a process and it's not already in another queue:
+      // if the process is not already in another queue:
       // place it into a queue based on queuetype
       if (p->pid > 0 && p->inqueue != 1) {
         switch(p->queuetype) {
@@ -333,7 +333,6 @@ scheduler(void)
 
       // q1: top priority tasks go first
       if(proc->queuetype == 1 && q1count > 0) {
-        // loop until quantum size is 0, with kernel interrupt every 10ms
         while(proc->quantumsize != 0) {
           switchuvm(p);
           p->state = RUNNING;
@@ -346,33 +345,28 @@ scheduler(void)
             cprintf("Process %d, '%s' has consumed 10 ms in Q%d\n", 
               proc->pid, proc->name, proc->queuetype);
           };
-          proc->quantumsize--;
+          proc->quantumsize--; // decrement quantumsize on each interrupt
           // if the process finishes while in the queue,
-          // remove it and reset it's queue parameters
+          // remove it, reset it's queue parameters, and exit the loop
           if(p->state != RUNNABLE) { 
             q1count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
-            if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-              cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
-            }
+            // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
+            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            // }
             break;
           }
         }
-        //cprintf("left q1 loop\n");
       }
       // 2nd priority, will only run if q1 is empty
       else if(p->queuetype == 2 && q1count == 0 && q2count > 0) {
-        //cprintf("entered q2\n");
         while(p->quantumsize != 0) {
           switchuvm(p);
           p->state = RUNNING;       
-          // switch from kernel to process until timer interrupt
           swtch(&cpu->scheduler, proc->context);
           switchkvm();
-          // jumps back here after timer interrupt (10ms)
-          // output for testing
           if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
             cprintf("Process %d, '%s' has consumed 10 ms in Q%d\n", 
               proc->pid, proc->name, proc->queuetype);
@@ -383,26 +377,20 @@ scheduler(void)
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
-            if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-              cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
-            }
+            // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
+            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            // }
             break;
           }
         }           
-        //cprintf("left q2 loop\n");
       }
       // 3rd priority goes last, will only run if q1 and q2 are empty
       else if(p->queuetype == 3 && q1count == 0 && q2count == 0 && q3count > 0) {
-        //cprintf("entered q3\n");
         while(p->quantumsize != 0) {
-          //cprintf("entered q3.2\n");
           switchuvm(p);
           p->state = RUNNING;        
-          // switch from kernel to process until timer interrupt
           swtch(&cpu->scheduler, proc->context);
           switchkvm();
-          // jumps back here after timer interrupt (10ms)
-          // output for testing
           if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
             cprintf("Process %d, '%s' has consumed 10 ms in Q%d\n", 
               proc->pid, proc->name, proc->queuetype);
@@ -413,37 +401,39 @@ scheduler(void)
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
-            if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-              cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
-            }
+            // if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
+            //   cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
+            // }
             break;
           }
+          // if the quantumsize == 8, the process has gone through it's
+          // first of two rounds in q3 - so do round robin, 
+          // exit q3 loop and move to the next process in scheduler
           if(proc->quantumsize == 8) break;
         }
-        //cprintf("left q3 loop\n");
       }
+      // handler for if process quantumsize == 0
       if(p->quantumsize == 0) {
         if(p->queuetype == 1) {
+          // demoted to q2
           q1count--;
           q2count++;
           p->queuetype = 2;
           p->quantumsize = 4;
-          //cprintf("demoted to q2\n");
-
         }
         else if(p->queuetype == 2){
+          // demoted to q3
           q2count--;
           q3count++;
           p->queuetype = 3;
           p->quantumsize = 16;
-          //cprintf("demoted to q3\n");
         }
         else if(p->queuetype == 3){
+          // boosted to q1
           q3count--;
           q1count++;
           p->queuetype = 1;
           p->quantumsize = 2;
-          //cprintf("boosted to q1\n");
         }
       }
     // Process is done running for now.
