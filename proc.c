@@ -273,7 +273,11 @@ scheduler(void)
 {
   struct proc *p;
 
-  // initialize queue counts, used for queue maintenance
+  // initialize queue counts, used to ensure the scheduler 
+  // will always choose the front process in the
+  // highest priority queue, because it will not process a
+  // proc in q2 if q1count > 0, will not process a proc in q3 if 
+  // q1count > 0 OR q2count > 0
   int q1count = 0;
   int q2count = 0;
   int q3count = 0;
@@ -409,7 +413,8 @@ scheduler(void)
           if(proc->quantumsize == 8) break;
         }
       }
-      // handler for if process quantumsize == 0
+      // handler for if process quantumsize == 0,
+      // the process didn't finish in this round
       if(p->quantumsize == 0) {
         if(p->queuetype == 1) {
           // demote to q2
