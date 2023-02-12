@@ -9644,8 +9644,8 @@ scheduler(void)
 80104b9c:	8b 80 80 00 00 00    	mov    0x80(%eax),%eax
 80104ba2:	83 f8 01             	cmp    $0x1,%eax
 80104ba5:	0f 85 ee 04 00 00    	jne    80105099 <scheduler+0x555>
-            // if the process was in a queue but is no longer runnable and is 
-            // currently in a queue, decrement the corresponding qcount
+            // if the process was in a queue but is no longer runnable,
+            // decrement the corresponding qcount
             switch(p->queuetype) {
 80104bab:	8b 45 f4             	mov    -0xc(%ebp),%eax
 80104bae:	8b 40 7c             	mov    0x7c(%eax),%eax

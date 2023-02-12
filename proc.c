@@ -292,8 +292,8 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE) {
         if(p->pid > 0 && p->inqueue == 1) {
-            // if the process was in a queue but is no longer runnable and is 
-            // currently in a queue, decrement the corresponding qcount
+            // if the process was in a queue but is no longer runnable,
+            // decrement the corresponding qcount
             switch(p->queuetype) {
               case 1 :
                 q1count--;
