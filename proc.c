@@ -277,6 +277,7 @@ scheduler(void)
 {
   struct proc *p;
 
+  // initialize queue counts, used for housekeeping
   int q1count = 0;
   int q2count = 0;
   int q3count = 0;
@@ -287,21 +288,12 @@ scheduler(void)
     sti();
     acquire(&ptable.lock);
 
-    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    //   if (p->state != RUNNABLE) continue;
-    //   if (p->pid > 0) {
-    //     cprintf("process pid: %d, name: %s\n", p->pid, p->name);
-    //   }
-    // }
-
-    //cprintf("\nbegin looping over proc table\n");
     // loop through process table
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE) {
-        // why doesn't the below line work?
-        // if(p->pid > 0) cprintf("p->state: %s\n", p->state);
         if(p->pid > 0 && p->inqueue == 1) {
-            // decrement the corresponding qcount
+            // if the process was in a queue but is no longer runnable and is 
+            // currently in a queue, decrement the corresponding qcount
             switch(p->queuetype) {
               case 1 :
                 q1count--;
@@ -312,16 +304,17 @@ scheduler(void)
               case 3 :
                 q3count--; 
             }
-            // set inqueue to 0, reset queuetype and quantumsize so if it comes back it will be in q1
+            // and reset its queue parameters
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
-            //cprintf("**proc %d, '%s' is not runnable, removing it from queue and moving to next proc\n", p->pid, p->name);
           }
+          // move along to next process
         continue;
         }
 
       // if it's a process and it's not already in another queue:
+      // place it into a queue based on queuetype
       if (p->pid > 0 && p->inqueue != 1) {
         switch(p->queuetype) {
           case 1 :
@@ -335,20 +328,13 @@ scheduler(void)
         }
         p->inqueue = 1;
       }
-      //cprintf("\nworking on proc %d '%s':\n", p->pid, p->name);
-      proc = p;
-      //cprintf("queue type: %d\n", p->queuetype);
-      //cprintf("quantum size: %d\n", p->quantumsize);
-      //cprintf("q1count: %d, q2count: %d, q3count: %d\n", q1count, q2count, q3count);
-      
 
-      // top priority tasks go first
-      if(p->queuetype == 1 && q1count > 0) {
-        //cprintf("entered q1\n");
-        while(p->quantumsize != 0) {
-          // Switch to chosen process.  It is the process's job
-          // to release ptable.lock and then reacquire it
-          // before jumping back to us.
+      proc = p;
+
+      // q1: top priority tasks go first
+      if(proc->queuetype == 1 && q1count > 0) {
+        // loop until quantum size is 0, with kernel interrupt every 10ms
+        while(proc->quantumsize != 0) {
           switchuvm(p);
           p->state = RUNNING;
           // switch from kernel to process until timer interrupt
@@ -361,13 +347,15 @@ scheduler(void)
               proc->pid, proc->name, proc->queuetype);
           };
           proc->quantumsize--;
-          if(p->state == ZOMBIE) {
+          // if the process finishes while in the queue,
+          // remove it and reset it's queue parameters
+          if(p->state != RUNNABLE) { 
             q1count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
             if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-              cprintf("Process %d, '%s' reached zombie state, removed from queue\n", proc->pid, proc->name);
+              cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
             }
             break;
           }
@@ -390,13 +378,13 @@ scheduler(void)
               proc->pid, proc->name, proc->queuetype);
           };
           proc->quantumsize--;
-          if(p->state == ZOMBIE) {
+          if(p->state != RUNNABLE) {
             q2count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
             if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-              cprintf("Process %d, '%s' reached zombie state, removed from queue\n", proc->pid, proc->name);
+              cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
             }
             break;
           }
@@ -420,13 +408,13 @@ scheduler(void)
               proc->pid, proc->name, proc->queuetype);
           };
           proc->quantumsize--;
-          if(p->state == ZOMBIE) {
+          if(p->state != RUNNABLE) {
             q3count--;
             p->inqueue = 0;
             p->queuetype = 1;
             p->quantumsize = 2;
             if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
-              cprintf("Process %d, '%s' reached zombie state, removed from queue\n", proc->pid, proc->name);
+              cprintf("Process %d, '%s' is no longer runnable, removed from queue\n", proc->pid, proc->name);
             }
             break;
           }

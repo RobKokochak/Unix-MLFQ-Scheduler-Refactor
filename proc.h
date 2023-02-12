@@ -67,8 +67,8 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   // insertion start
-  int queuetype;
-  int inqueue;
+  int queuetype; // q1, q2, or q3
+  int inqueue; // inidicator flag for if a process is currently waiting in a queue
   int quantumsize;
   // insertion end
 };
