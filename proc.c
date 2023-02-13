@@ -342,7 +342,7 @@ scheduler(void)
           switchkvm();
           // jumps back here after timer interrupt (10ms)
           // output for testing
-          if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
+          if (strncmp(proc->name, "spin", 4) == 0) {
             cprintf("Process %d, '%s' has consumed 10 ms in Q%d\n", 
               proc->pid, proc->name, proc->queuetype);
           };
@@ -368,7 +368,8 @@ scheduler(void)
           p->state = RUNNING;       
           swtch(&cpu->scheduler, proc->context);
           switchkvm();
-          if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
+          // timer interrupt
+          if (strncmp(proc->name, "spin", 4) == 0) {
             cprintf("Process %d, '%s' has consumed 10 ms in Q%d\n", 
               proc->pid, proc->name, proc->queuetype);
           };
@@ -392,7 +393,8 @@ scheduler(void)
           p->state = RUNNING;        
           swtch(&cpu->scheduler, proc->context);
           switchkvm();
-          if (strncmp(proc->name, "spin", 4) == 0 || strncmp(proc->name, "sh", 2) == 0) {
+          // timer interrupt
+          if (strncmp(proc->name, "spin", 4) == 0) {
             cprintf("Process %d, '%s' has consumed 10 ms in Q%d\n", 
               proc->pid, proc->name, proc->queuetype);
           };
