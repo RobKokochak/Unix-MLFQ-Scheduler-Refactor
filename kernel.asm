@@ -9682,7 +9682,7 @@ scheduler(void)
 80104bf1:	00 00 00 
           }
           // since process isn't runnable, 
-          // exit the loop and go to next process in ptable
+          // exit and go to next process in ptable
         continue;
 80104bf4:	e9 40 04 00 00       	jmp    80105039 <scheduler+0x4f5>
         }
@@ -10086,7 +10086,7 @@ scheduler(void)
 80104f72:	eb 25                	jmp    80104f99 <scheduler+0x455>
           }
           // if the quantumsize == 8, the process has gone through it's
-          // first of two rounds in q3 -> do round robin, 
+          // first of two rounds in q3. Ala round robin, 
           // exit q3 loop and move to the next process in scheduler
           if(proc->quantumsize == 8) break;
 80104f74:	65 a1 04 00 00 00    	mov    %gs:0x4,%eax
@@ -10107,7 +10107,7 @@ scheduler(void)
             break;
           }
           // if the quantumsize == 8, the process has gone through it's
-          // first of two rounds in q3 -> do round robin, 
+          // first of two rounds in q3. Ala round robin, 
           // exit q3 loop and move to the next process in scheduler
           if(proc->quantumsize == 8) break;
 80104f98:	90                   	nop
@@ -10187,7 +10187,7 @@ scheduler(void)
             p->quantumsize = 2;
           }
           // since process isn't runnable, 
-          // exit the loop and go to next process in ptable
+          // exit and go to next process in ptable
         continue;
 80105039:	90                   	nop
     // Enable interrupts on this processor.
