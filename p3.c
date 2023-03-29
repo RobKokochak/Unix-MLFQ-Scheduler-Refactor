@@ -17,7 +17,7 @@ double GetTime() {
 void Spin(int howlong) {
   double t = GetTime();
   while ((GetTime() - t) < (double)howlong) {
-    ;} // do nothing in loop
+    ;}
 }
 
 // *******************************************
@@ -28,6 +28,7 @@ typedef struct {
   int cid;
   int arrival_time;
   int service_time;
+  int start_time;
 } CustomerData;
 
 typedef struct {
@@ -73,47 +74,46 @@ sem_t customersWaiting;
 sem_t mutex_lock;
 CustomerQueue customerQueue;
 CustomerQueue* qPtr = &customerQueue;
+int serviceAvailableTime = 0;
 
 
 void service() {
   while (1) {
-    sem_wait(&customersWaiting); // sleep until customers arrive
+    sem_wait(&customersWaiting);
     sem_wait(&mutex_lock);
     CustomerData* customer = dequeue(qPtr);
-    //printf("dequeued customer %d\n", customer->cid);
+    customer->start_time = serviceAvailableTime;
     sem_post(&mutex_lock);
-    printf("Customer %d starts\n", customer->cid);
-    //if (is_queue_empty) printf("queue is empty\n");
-    // printf("Time %d: Customer %d starts\n", how to calculate time when customer starts?
+    printf("Time %*d: Customer %*d         starts\n", 2, customer->start_time, 2, customer->cid);
     Spin(customer->service_time);
-    // increment global time variable, with value of service_time?
-    printf("Customer %d done\n", customer->cid);
-    // printf("Time %d: Customer %d leaves\n", how to calculate time when customer left?
-    sem_post(&availableAssts); // indicate an asst is available
+    int finish_time = customer->start_time + customer->service_time;
+    printf("Time %*d: Customer %*d                done\n", 2, finish_time, 2, customer->cid);
+    serviceAvailableTime = finish_time;
+    sem_post(&availableAssts);
   }
 }
 
 void enqueueCustomer(CustomerData* cust_data) { 
   sem_wait(&mutex_lock);
-  // int customersWaitingSemVal;
-  // sem_getvalue(&customersWaiting, &customersWaitingSemVal);
   if (is_queue_full(qPtr)) {
-    printf("Time %d: Customer %d leaves\n", cust_data->arrival_time, cust_data->cid);
+    printf("Time %*d: Customer %*d                     leaves\n", 2, cust_data->arrival_time, 2, cust_data->cid);
     sem_post(&mutex_lock);
     pthread_exit(NULL);
   }
+  if (is_queue_empty(qPtr)) {
+    serviceAvailableTime = cust_data->arrival_time;
+  }
   enqueue(qPtr, cust_data);
-  //printf("enqueued customer %d\n", cust_data->cid);
   sem_post(&mutex_lock);
-  sem_post(&customersWaiting); // increment customersWaiting, wake any sleeping assts
-  sem_wait(&availableAssts); // sleep until an asst is available
+
+  sem_post(&customersWaiting);
+  sem_wait(&availableAssts);
 }
 
 void createCustomer(void* custData) {
   CustomerData* cust_data = (CustomerData*) custData;
-  usleep(cust_data->arrival_time * 1000000); // wait x seconds
-  printf("Time %d: Customer %d arrives\n", cust_data->arrival_time, cust_data->cid);
-
+  usleep(cust_data->arrival_time * 1000000); // simulate arrvl time by sleeping x seconds
+  printf("Time %*d: Customer %*d arrives\n", 2, cust_data->arrival_time, 2, cust_data->cid);
   enqueueCustomer(cust_data);
 }
 
@@ -125,8 +125,6 @@ int main(void) {
 
   pthread_t* asst1 = malloc(sizeof(*asst1));
   pthread_t* asst2 = malloc(sizeof(*asst2));
-  pthread_create(asst1, NULL, (void*)service, NULL);
-  pthread_create(asst2, NULL, (void*)service, NULL);
 
   pthread_t* cust1 = malloc(sizeof(*cust1));
   CustomerData cust1Data;
@@ -199,6 +197,9 @@ int main(void) {
   cust12Data.cid = 12;
   cust12Data.arrival_time = 39;
   cust12Data.service_time = 3;
+
+  pthread_create(asst1, NULL, (void*)service, NULL);
+  pthread_create(asst2, NULL, (void*)service, NULL);
 
   pthread_create(cust1, NULL, (void*)createCustomer, (void*)&cust1Data);
   pthread_create(cust2, NULL, (void*)createCustomer, (void*)&cust2Data);
